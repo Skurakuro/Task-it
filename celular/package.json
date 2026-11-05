@@ -1,0 +1,20 @@
+{
+  "name": "task-it-celular",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Task-it para Android e iPhone (Capacitor)",
+  "scripts": {
+    "copy-web": "node copy-web.js",
+    "sync": "node copy-web.js && npx cap sync",
+    "apk": "node copy-web.js && npx cap sync android && cd android && gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/ios": "^8.6.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.6.0"
+  }
+}

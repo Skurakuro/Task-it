@@ -1,0 +1,13 @@
+{
+  "appId": "com.taskit.notes",
+  "appName": "Task-it",
+  "webDir": "www",
+  "backgroundColor": "#202020",
+  "android": {
+    "backgroundColor": "#202020"
+  },
+  "ios": {
+    "backgroundColor": "#202020",
+    "contentInset": "always"
+  }
+}

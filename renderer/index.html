@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https: wss:" />
+  <title>Task-it</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="list-page">
+  <header class="titlebar">
+    <button id="new" class="icon" title="Nova nota (Ctrl+N)">
+      <svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+    </button>
+    <button id="themeBtn" class="icon" title="Modo claro / escuro"></button>
+    <button id="themeMore" class="icon" title="Personalizar cores do tema">
+      <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+    </button>
+    <span class="drag"></span>
+    <button id="syncBtn" class="icon" title="Conectar celular"><span id="dot" class="dot"></span>
+      <svg viewBox="0 0 24 24"><path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 3v13h10V5zm5 14.2a1 1 0 1 0 0 1.6 1 1 0 0 0 0-1.6z"/></svg>
+    </button>
+    <button id="min" class="icon" title="Minimizar"><svg viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></button>
+    <button id="close" class="icon" title="Fechar"><svg viewBox="0 0 24 24"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6 10.6 12 5 6.4z"/></svg></button>
+  </header>
+
+  <h1>Task-it</h1>
+
+  <div class="search">
+    <input id="q" placeholder="Procurar…" />
+    <button id="filterBtn" class="filter-btn" title="Filtrar por cor ou temática">
+      <svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8.2V19l-4 2v-7.8z"/></svg>
+      <span id="filterDot" class="filter-dot" hidden></span>
+    </button>
+  </div>
+
+  <section id="themePanel" class="panel theme-panel" hidden>
+    <div class="fp-head" id="themeHead">Cores do modo noturno</div>
+    <div id="themePresets" class="fp-row"></div>
+    <div id="themeCustom" hidden>
+      <label class="trow"><span>Fundo</span><input type="color" data-k="bg" class="tpick" /><input data-k="bg" class="tcode" spellcheck="false" /></label>
+      <label class="trow"><span>Cartões</span><input type="color" data-k="card" class="tpick" /><input data-k="card" class="tcode" spellcheck="false" /></label>
+      <label class="trow"><span>Texto</span><input type="color" data-k="text" class="tpick" /><input data-k="text" class="tcode" spellcheck="false" /></label>
+    </div>
+    <button id="themeReset" class="link">Restaurar padrão</button>
+  </section>
+
+  <section id="filterPanel" class="filter-panel" hidden>
+    <div class="fp-head">Cor</div>
+    <div id="fpColors" class="fp-row"></div>
+    <div class="fp-head">Temática</div>
+    <div id="fpThemes" class="fp-row"></div>
+    <button id="fpClear" class="link">Limpar filtros</button>
+  </section>
+
+  <section id="selBar" class="sel-bar" hidden>
+    <button id="selAll" class="chip">Selecionar todas</button>
+    <span id="selCount" class="sel-count"></span>
+    <span class="grow"></span>
+    <button id="selDel" class="chip danger" title="Excluir selecionadas (Delete)">Excluir</button>
+    <button id="selClear" class="icon small" title="Cancelar seleção (Esc)"><svg viewBox="0 0 24 24"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6 10.6 12 5 6.4z"/></svg></button>
+  </section>
+
+  <section id="syncPanel" class="sync-panel" hidden>
+    <h2>Conectar celular</h2>
+    <p>1. Com o celular no <b>mesmo Wi-Fi</b>, escaneie o QR.</p>
+    <img id="qr" alt="QR code" />
+    <p class="small copy-row">ou abra: <code id="url"></code> <button class="chip" data-copy="url" title="Copiar o link">Copiar</button></p>
+    <p>2. No celular, toque em <b>Adicionar à tela inicial</b>. As notas sincronizam pela internet, mas por enquanto a página do celular é aberta pelo PC (mesmo Wi-Fi).</p>
+    <p class="small copy-row">Código de pareamento: <code id="code"></code> <button class="chip" data-copy="code" title="Copiar o código">Copiar</button></p>
+    <p class="small">Status: <span id="status">iniciando…</span></p>
+  </section>
+
+  <main id="list"></main>
+  <p class="hint">Dica: Ctrl+clique seleciona várias notas.</p>
+
+  <script src="../node_modules/peerjs/dist/peerjs.min.js"></script>
+  <script src="../shared/colors.js"></script>
+  <script src="../shared/sync-core.js"></script>
+  <script src="../shared/sync-net.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

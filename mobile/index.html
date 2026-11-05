@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#202020" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Task-it" />
+  <title>Task-it</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; height: 100%; }
+    body { background: #202020; color: #e8e8e8; font: 16px/1.4 system-ui, 'Segoe UI', Roboto, sans-serif; }
+    button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+    header { display: flex; align-items: center; gap: 8px; padding: 14px 16px 6px; }
+    h1 { flex: 1; margin: 0; font-size: 24px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #777; }
+    .dot.connected { background: #6cc04a; } .dot.connecting { background: #e0b000; }
+    .dot.offline, .dot.error { background: #d04a4a; }
+    #statusText { font-size: 12px; color: #999; padding: 0 16px 8px; }
+    .search { padding: 0 16px 10px; }
+    input, textarea { font: inherit; }
+    .search input, .setup input {
+      width: 100%; padding: 12px; border: 0; border-radius: 6px; background: #2d2d2d; color: #eee; outline: none;
+    }
+    #list { padding: 0 16px 90px; }
+    .card { background: #2b2b2b; border-top: 4px solid var(--c); border-radius: 6px; padding: 8px 14px 14px; margin-bottom: 12px; }
+    .top { display: flex; gap: 8px; font-size: 12px; color: #aaa; }
+    .top .grow { flex: 1; }
+    .date { color: var(--c); }
+    .title { font-weight: 600; }
+    .body { white-space: pre-wrap; word-break: break-word;
+      display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+    .muted { color: #888; font-style: italic; }
+    .empty { text-align: center; color: #888; margin-top: 50px; }
+    .fab { position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); width: 60px; height: 60px;
+      border-radius: 50%; background: #6cc04a; color: #111; font-size: 32px; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+
+    #editor { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--bg); color: var(--fg); }
+    #editor[hidden] { display: none; }
+    #editor .bar { display: flex; align-items: center; gap: 4px; padding: 8px; padding-top: calc(8px + env(safe-area-inset-top)); background: var(--bar); }
+    #editor .bar button { width: 44px; height: 44px; border-radius: 8px; font-size: 20px; }
+    #editor .bar .sp { flex: 1; }
+    #eTitle { border: 0; outline: none; background: transparent; color: var(--fg); padding: 14px 16px 0; font-size: 19px; font-weight: 600; }
+    #editor textarea { flex: 1; border: 0; outline: none; resize: none; background: transparent; padding: 10px 16px 16px; font-size: 17px; color: var(--fg); }
+    #eTitle::placeholder, #editor textarea::placeholder { color: var(--muted); }
+    .audios { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 16px 0; }
+    .audios:empty { display: none; }
+    .audios button { padding: 6px 12px; border-radius: 16px; background: rgba(127,127,127,.2); font-size: 14px; }
+    .palette { background: var(--bar); padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+    .palette[hidden] { display: none; }
+    .swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+    .swatches button { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(127,127,127,.4); }
+    .custom { display: flex; gap: 8px; }
+    .custom input { flex: 1; min-width: 0; padding: 8px; border-radius: 6px; border: 1px solid rgba(0,0,0,.2); font-family: monospace; }
+    .custom button { padding: 8px 12px; border-radius: 6px; background: #fff; color: #222; }
+
+    .setup { padding: 30px 20px; }
+    .setup p { color: #bbb; }
+    .setup .go { margin-top: 12px; width: 100%; padding: 12px; border-radius: 6px; background: #6cc04a; color: #111; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <section id="setup" class="setup" hidden>
+    <h1>Task-it</h1>
+    <p>Digite o código de pareamento que aparece no computador (ícone de celular na lista de notas).</p>
+    <input id="codeInput" placeholder="postit-…" autocapitalize="off" autocomplete="off" />
+    <button class="go" id="codeGo">Conectar</button>
+  </section>
+
+  <section id="app" hidden>
+    <header>
+      <h1>Task-it</h1>
+      <span id="dot" class="dot" title="status"></span>
+    </header>
+    <div id="statusText">iniciando…</div>
+    <div class="search"><input id="q" placeholder="Procurar…" /></div>
+    <main id="list"></main>
+    <button class="fab" id="new" aria-label="Nova nota">＋</button>
+  </section>
+
+  <section id="editor" hidden>
+    <div class="bar">
+      <button id="back" aria-label="Voltar">←</button>
+      <span class="sp"></span>
+      <button id="colorBtn" aria-label="Cor">🎨</button>
+      <button id="del" aria-label="Excluir">🗑</button>
+    </div>
+    <div class="palette" id="palette" hidden>
+      <div class="swatches" id="swLight"></div>
+      <div class="swatches" id="swDark"></div>
+      <div class="custom"><input id="customIn" placeholder="#RRGGBB ou 255,200,0" autocapitalize="off" /><button id="customGo">Aplicar</button></div>
+    </div>
+    <input id="eTitle" placeholder="Título / temática" />
+    <div class="audios" id="eAudios"></div>
+    <textarea id="text" placeholder="Anote algo…"></textarea>
+  </section>
+
+  <script src="peerjs.min.js"></script>
+  <script src="colors.js"></script>
+  <script src="sync-core.js"></script>
+  <script src="sync-net.js"></script>
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const C = PostitColors;
+    const STATUS = { connecting: 'conectando ao computador…', connected: 'sincronizado com o computador ✔',
+      offline: 'computador desligado — as notas ficam salvas aqui e sincronizam depois', error: 'erro de conexão' };
+
+    const store = {
+      get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+      set(k, v) {
+        try { localStorage.setItem(k, JSON.stringify(v)); }
+        catch { alert('Memória do navegador cheia (áudios ocupam bastante). Apague alguns áudios no PC.'); }
+      },
+    };
+    let notes = store.get('postit.notes', []);
+    let query = '';
+    let editingId = null;
+    let sync = null;
+    let pushTimer = null;
+    let player = null;
+    const changesOf = PostitSync.makeChangeTracker();
+    changesOf(notes);
+
+    const save = () => store.set('postit.notes', notes);
+    const fmtDate = (t) => new Date(t).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', '');
+    const fmtDur = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const find = (id) => notes.find((n) => n.id === id);
+    const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+    function pushSoon() {
+      clearTimeout(pushTimer);
+      pushTimer = setTimeout(() => {
+        const diff = changesOf(notes);
+        if (sync && diff.length) sync.push(diff);
+      }, 300);
+    }
+
+    function touch(n, patch) {
+      Object.assign(n, patch, { updatedAt: Date.now() });
+      save();
+      pushSoon();
+    }
+
+    function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+    function render() {
+      const list = $('#list');
+      list.replaceChildren();
+      const vis = notes.filter((n) => !n.deleted && ((n.title || '') + '\n' + n.text).toLowerCase().includes(query))
+        .sort((a, b) => b.updatedAt - a.updatedAt);
+      if (!vis.length) return list.append(el('p', 'empty', query ? 'Nada encontrado.' : 'Nenhuma nota ainda. Toque em ＋.'));
+      for (const n of vis) {
+        const card = el('article', 'card');
+        card.style.setProperty('--c', C.resolve(n.color).accent);
+        const top = el('div', 'top');
+        if (n.audios && n.audios.length) top.append(el('span', '', '🎙 ' + n.audios.length));
+        top.append(el('span', 'grow'), el('span', 'date', fmtDate(n.updatedAt)));
+        card.append(top);
+        if (n.title) card.append(el('div', 'title', n.title));
+        if (n.text || !n.title) {
+          const b = el('div', 'body', n.text || 'Nota vazia');
+          if (!n.text) b.classList.add('muted');
+          card.append(b);
+        }
+        card.onclick = () => openEditor(n.id);
+        list.append(card);
+      }
+    }
+
+    function paintEditor(n) {
+      const c = C.resolve(n.color);
+      const s = $('#editor').style;
+      s.setProperty('--bg', c.bg); s.setProperty('--bar', c.bar); s.setProperty('--fg', c.text); s.setProperty('--muted', c.muted);
+    }
+
+    function renderAudios(n) {
+      const box = $('#eAudios');
+      box.replaceChildren();
+      (n.audios || []).forEach((a, i) => {
+        const b = el('button', '', `▶ Áudio ${i + 1} · ${fmtDur(a.duration)}`);
+        b.onclick = () => {
+          if (player) { player.pause(); player = null; }
+          player = new Audio(a.data);
+          player.play().catch(() => alert('Este navegador não conseguiu tocar o áudio.'));
+        };
+        box.append(b);
+      });
+    }
+
+    function openEditor(id) {
+      const n = find(id);
+      if (!n) return;
+      editingId = id;
+      $('#text').value = n.text;
+      $('#eTitle').value = n.title || '';
+      paintEditor(n);
+      renderAudios(n);
+      $('#palette').hidden = true;
+      $('#editor').hidden = false;
+      history.pushState({ editor: true }, '');
+    }
+    function closeEditor() {
+      if (editingId === null) return;
+      const n = find(editingId);
+      editingId = null;
+      if (player) { player.pause(); player = null; }
+      $('#editor').hidden = true;
+      // Nota criada e deixada vazia: some.
+      if (n && !n.text.trim() && !(n.title || '').trim() && !(n.audios || []).length && !n.deleted) touch(n, { deleted: true, text: '' });
+      render();
+    }
+
+    $('#new').onclick = () => {
+      const now = Date.now();
+      const n = { id: uuid(), title: '', text: '', color: 'yellow', audios: [], deleted: false, createdAt: now, updatedAt: now };
+      notes.unshift(n);
+      save();
+      openEditor(n.id);
+      $('#eTitle').focus();
+    };
+    $('#back').onclick = () => history.back();
+    window.addEventListener('popstate', closeEditor);
+    $('#text').oninput = (e) => { const n = find(editingId); if (n) touch(n, { text: e.target.value }); };
+    $('#eTitle').oninput = (e) => { const n = find(editingId); if (n) touch(n, { title: e.target.value }); };
+    $('#eTitle').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#text').focus(); } };
+    $('#del').onclick = () => {
+      const n = find(editingId);
+      if (n && confirm('Excluir esta nota?')) { touch(n, { deleted: true, text: '', title: '', audios: [] }); history.back(); }
+    };
+    $('#colorBtn').onclick = () => ($('#palette').hidden = !$('#palette').hidden);
+    function setColor(c) { const n = find(editingId); if (n) { touch(n, { color: c }); paintEditor(n); } }
+    for (const [box, list] of [['#swLight', C.LIGHT], ['#swDark', C.DARK]]) {
+      for (const c of list) {
+        const b = el('button');
+        b.style.background = C.PRESETS[c].bg;
+        b.setAttribute('aria-label', C.PRESETS[c].name);
+        b.onclick = () => setColor(c);
+        $(box).append(b);
+      }
+    }
+    $('#customGo').onclick = () => {
+      const hex = C.parseColor($('#customIn').value);
+      if (!hex) return alert('Código inválido. Use #RRGGBB ou R,G,B.');
+      setColor(hex);
+    };
+    $('#q').oninput = (e) => { query = e.target.value.toLowerCase(); render(); };
+
+    function applyRemote(remote) {
+      const { merged, changed } = PostitSync.mergeNotes(notes, remote);
+      if (!changed) return false;
+      notes = merged;
+      changesOf(notes); // o que veio de fora não precisa voltar
+      save();
+      const n = editingId && find(editingId);
+      if (n) {
+        if (n.deleted) history.back();
+        else {
+          if (document.activeElement !== $('#text')) $('#text').value = n.text;
+          if (document.activeElement !== $('#eTitle')) $('#eTitle').value = n.title || '';
+          paintEditor(n);
+          renderAudios(n);
+        }
+      }
+      render();
+      return true;
+    }
+
+    function start(code) {
+      $('#setup').hidden = true;
+      $('#app').hidden = false;
+      render();
+      sync = PostitNet.startSync({
+        code,
+        host: false,
+        getNotes: () => PostitSync.shareable(notes),
+        applyRemote,
+        onStatus: (s) => {
+          $('#dot').className = 'dot ' + s.state;
+          $('#statusText').textContent = (STATUS[s.state] || s.state) + (s.error ? ` (${s.error})` : '');
+        },
+      });
+    }
+
+    // Código vem do QR (?code=...) na primeira vez e fica salvo no aparelho.
+    const urlCode = new URLSearchParams(location.search).get('code');
+    if (urlCode) { store.set('postit.code', urlCode); history.replaceState(null, '', location.pathname); }
+    // Aceita o código puro ou o link inteiro copiado do PC (…?code=postit-…).
+    const cleanCode = (v) => { const s = String(v || '').trim(); const m = s.match(/postit-[0-9a-f]+/i); return m ? m[0].toLowerCase() : s; };
+    $('#codeGo').onclick = () => {
+      const c = cleanCode($('#codeInput').value);
+      if (!c) return;
+      store.set('postit.code', c);
+      start(c);
+    };
+    // Tocar no status permite trocar de computador (novo código).
+    $('#statusText').onclick = () => {
+      const c = cleanCode(prompt('Código de pareamento do computador:', store.get('postit.code', '')));
+      if (!c || c === store.get('postit.code', '')) return;
+      store.set('postit.code', c);
+      location.reload();
+    };
+    // Funciona offline quando o site está em HTTPS (iPhone "Adicionar à Tela de Início").
+    if ('serviceWorker' in navigator && window.isSecureContext && !window.Capacitor) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    const code = store.get('postit.code', null);
+    if (code) start(code);
+    else $('#setup').hidden = false;
+  </script>
+</body>
+</html>

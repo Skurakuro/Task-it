@@ -50,3 +50,41 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+
+  ios-sideload:
+    name: Task-it iPhone - Sideloadly (sem conta paga Apple)
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    environment:
+      node: 22
+      xcode: latest
+    scripts:
+      - name: Instalar dependências
+        script: |
+          npm ci --omit=dev --ignore-scripts
+          cd celular
+          npm ci
+      - name: Preparar app iOS
+        script: |
+          cd celular
+          node copy-web.js
+          npx cap sync ios
+      - name: Compilar para iPhone sem assinatura
+        script: |
+          xcodebuild -project celular/ios/App/App.xcodeproj \
+            -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/ios-sideload \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" build
+      - name: Empacotar IPA para assinatura pelo Sideloadly
+        script: |
+          set -eu
+          APP="$CM_BUILD_DIR/build/ios-sideload/Build/Products/Release-iphoneos/App.app"
+          test -d "$APP"
+          mkdir -p "$CM_BUILD_DIR/build/sideload/Payload"
+          ditto "$APP" "$CM_BUILD_DIR/build/sideload/Payload/App.app"
+          cd "$CM_BUILD_DIR/build/sideload"
+          /usr/bin/zip -qry Task-it-unsigned.ipa Payload
+    artifacts:
+      - build/sideload/Task-it-unsigned.ipa
